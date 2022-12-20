@@ -8,6 +8,11 @@ y = df.iloc[:, :39]
 X = X.to_numpy()
 y = y.to_numpy()
 
+df2 = pd.read_csv('predict.csv')
+
+pX = df2.iloc[:, 39:]
+pX = pX.to_numpy()
+
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.linear_model import Lasso
 
@@ -21,6 +26,8 @@ from sklearn.linear_model import Ridge
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import GradientBoostingRegressor
+
+import matplotlib.pyplot as plt
 
 # base_estimator = RandomForestRegressor(
 #     n_estimators=420,
@@ -45,10 +52,8 @@ from sklearn.ensemble import GradientBoostingRegressor
 # DecisionTreeRegressor()
 #
 
-#base_estimator = GradientBoostingRegressor(n_estimators=198, learning_rate=0.01126,
-#                                max_depth=22, random_state=42,alpha=0.0024477)
-base_estimator = GradientBoostingRegressor(n_estimators=10, learning_rate=0.01126,
-                                max_depth=3, random_state=42,alpha=0.0024477)
+base_estimator = GradientBoostingRegressor(n_estimators=100, learning_rate=0.01126,
+                                max_depth=5, random_state=17,alpha=0.024477)
 
 base_estimator = MultiOutputRegressor(base_estimator)
 
@@ -57,7 +62,7 @@ model = base_estimator
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
 
-kfold = KFold(n_splits=2)
+kfold = KFold(n_splits=3)
 for train_index, test_index in kfold.split(X):
     # 取出訓練集和驗證集
     X_train, X_test = X[train_index], X[test_index]
@@ -76,13 +81,36 @@ from sklearn.metrics import mean_absolute_error
 mae = mean_absolute_error(y_test, y_pred)
 print(f"MAE: {mae:.2f}")
 
-print(model.score(X,y,sample_weight=None))
+print(f"R_squared: {model.score(X_test,y_test,sample_weight=None):.2f}")
 
-from sklearn.metrics import precision_score, recall_score
+# 設定圖片大小
+plt.figure(figsize=(20, 10))
 
-# 假設 y_pred 是模型預測的結果，y_test 是實際的結果
-recall = recall_score(y_test, y_pred, average='macro')
-print(f"Recall: {recall:.2f}")
+# 設定圖片布局
+plt.subplots_adjust(wspace=0.2, hspace=0.4)
+
+# 迴圈繪製殘差圖
+for i in range(y_test.shape[1]):
+  plt.subplot(5, 8, i+1)
+  plt.scatter(y_test[:, i], y_pred[:, i] - y_test[:, i])
+  plt.xlabel('Actual')
+  plt.ylabel('Residual')
+  plt.title('')
+
+# 顯示圖片
+plt.show()
+
+py_pre = model.predict(pX)
+import csv
+# 打開 CSV 文件
+csv_file = open('prediction_t.csv', 'w', newline='')
+writer = csv.writer(csv_file)
+
+# 将模型預測结果写入 CSV 文件
+for row in py_pre:
+  writer.writerow(row)
+
+print(py_pre)
 
 """
 import pandas as pd
